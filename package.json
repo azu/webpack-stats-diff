@@ -7,8 +7,9 @@
     "webpack-stats-diff": "./lib/index.js"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "prepublish": "gulp compile"
+    "prettier": "prettier --write \"**/*.{js,jsx,ts,tsx,css}\"",
+    "precommit": "lint-staged",
+    "postcommit": "git reset"
   },
   "author": "Kostas Manionis",
   "license": "ISC",
@@ -19,10 +20,20 @@
     "filesize": "^3.3.0",
     "yargs": "^4.7.1"
   },
+  "prettier": {
+    "singleQuote": false,
+    "printWidth": 120,
+    "tabWidth": 4
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,css}": [
+      "prettier --write",
+      "git add"
+    ]
+  },
   "devDependencies": {
-    "babel-preset-es2015": "^6.9.0",
-    "gulp": "^3.9.1",
-    "gulp-babel": "^6.1.2",
-    "gulp-plumber": "^1.1.0"
+    "husky": "^0.14.3",
+    "lint-staged": "^7.1.2",
+    "prettier": "^1.12.1"
   }
 }

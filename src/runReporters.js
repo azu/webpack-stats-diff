@@ -1,6 +1,6 @@
-'use strict';
+"use strict";
 
-const differs = require('./reporters');
+const differs = require("./reporters");
 
 const run = (name, options, stats) => {
     const differ = differs[name];
@@ -10,11 +10,11 @@ const run = (name, options, stats) => {
 };
 
 module.exports = config => {
-    const {reporters, stats} = config;
+    const { reporters, stats } = config;
     if (Array.isArray(reporters)) {
-        reporters.forEach(({reporter, options}) => run(reporter, options, stats));
+        reporters.forEach(({ reporter, options }) => run(reporter, options, stats));
     } else {
-        const {reporter, options} = reporters;
+        const { reporter, options } = reporters;
         run(reporter, options, stats);
     }
 };

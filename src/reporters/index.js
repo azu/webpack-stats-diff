@@ -1,7 +1,7 @@
-'use strict';
+"use strict";
 
 module.exports = {
-    chunks: require('./chunks'),
-    assets: require('./chunks'),
-    modules: require('./modules')
+    chunks: require("./chunks"),
+    assets: require("./chunks"),
+    modules: require("./modules")
 };

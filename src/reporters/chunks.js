@@ -1,27 +1,27 @@
-'use strict';
+"use strict";
 
-const filesize = require('filesize');
-const ui = require('cliui')({
+const filesize = require("filesize");
+const ui = require("cliui")({
     width: 150
 });
-const chalk = require('chalk');
-const utils = require('../utils');
+const chalk = require("chalk");
+const utils = require("../utils");
 
 const headerCopy = {
     name: {
-        assets: 'Asset name',
-        chunks: 'Chunk name'
+        assets: "Asset name",
+        chunks: "Chunk name"
     },
     size: {
-        before: 'Size before',
-        after: 'Size after'
+        before: "Size before",
+        after: "Size after"
     },
     modules: {
-        before: 'Modules before',
-        after: 'Modules after'
+        before: "Modules before",
+        after: "Modules after"
     },
-    difference: 'Difference',
-    percentage: 'Percentage'
+    difference: "Difference",
+    percentage: "Percentage"
 };
 
 const mapChunkDiffData = formatFunc => sizeData => {
@@ -36,11 +36,11 @@ const mapModuleData = mapChunkDiffData(value => value);
 
 const getSortValue = (before, after, sortBy) => {
     // By default we're sorting by chunk size
-    let sortKey = 'chunkSize';
+    let sortKey = "chunkSize";
 
     // Or we can sort by module count
-    if (sortBy.indexOf('modules') > -1) {
-        sortKey = 'moduleCount';
+    if (sortBy.indexOf("modules") > -1) {
+        sortKey = "moduleCount";
     }
 
     // Assign to variable, easier to the eye
@@ -53,7 +53,7 @@ const getSortValue = (before, after, sortBy) => {
     let sortResult = sortByBefore - sortByAfter;
 
     // Sort descending? Just flip everything LOL
-    if (sortBy.indexOf('desc') > -1) {
+    if (sortBy.indexOf("desc") > -1) {
         sortResult *= -1;
     }
 
@@ -64,94 +64,93 @@ const getSortValue = (before, after, sortBy) => {
 module.exports = {
     buildDiffObject(reporterName, stats, options) {
         const chunksData = stats.reduce((initial, stat, fileIndex) => {
-            return stat[reporterName]
-                // First filter out the chunks/assets that we'll be comparing
-                .filter(chunk => {
-                    const {exclude} = options;
+            return (
+                stat[reporterName]
+                    // First filter out the chunks/assets that we'll be comparing
+                    .filter(chunk => {
+                        const { exclude } = options;
 
-                    // It's sometime usefull to exclude certain files. Who cares about js maps, right?
-                    if (exclude) {
-                        // Stack overflow is the most reliable source in the world, right?
-                        // http://stackoverflow.com/questions/874709/converting-user-input-string-to-regular-expression
-                        const match = exclude.match(new RegExp('^/(.*?)/([gimy]*)$'));
-                        const regex = new RegExp(match[1], match[2]);
-                        const chunkName = utils.normalizeChunkName(chunk, stat);
-                        return !regex.test(chunkName);
-                    } else {
-                        return true;
-                    }
-                })
-                // Then reduce the stats to an map-like object, since it makes life a little bit easier than
-                // searching for chunk data in an array and is generaly easier to wrap your head around.
-                .reduce((chunkMap, chunk) => {
-                    const name = utils.normalizeChunkName(chunk, stat);
+                        // It's sometime usefull to exclude certain files. Who cares about js maps, right?
+                        if (exclude) {
+                            // Stack overflow is the most reliable source in the world, right?
+                            // http://stackoverflow.com/questions/874709/converting-user-input-string-to-regular-expression
+                            const match = exclude.match(new RegExp("^/(.*?)/([gimy]*)$"));
+                            const regex = new RegExp(match[1], match[2]);
+                            const chunkName = utils.normalizeChunkName(chunk, stat);
+                            return !regex.test(chunkName);
+                        } else {
+                            return true;
+                        }
+                    })
+                    // Then reduce the stats to an map-like object, since it makes life a little bit easier than
+                    // searching for chunk data in an array and is generaly easier to wrap your head around.
+                    .reduce((chunkMap, chunk) => {
+                        const name = utils.normalizeChunkName(chunk, stat);
 
-                    let data = chunkMap[name];
+                        let data = chunkMap[name];
 
-                    // Do we have some chunk data already?
-                    if (!data) {
-                        data = chunkMap[name] = {
-                            chunkSize: [0, 0],
-                            moduleCount: [0, 0]
-                        };
-                    }
+                        // Do we have some chunk data already?
+                        if (!data) {
+                            data = chunkMap[name] = {
+                                chunkSize: [0, 0],
+                                moduleCount: [0, 0]
+                            };
+                        }
 
-                    const {chunkSize, moduleCount} = data;
-                    const {size, modules} = chunk;
+                        const { chunkSize, moduleCount } = data;
+                        const { size, modules } = chunk;
 
-                    if (modules) {
-                        moduleCount[fileIndex] = modules.length;
-                    }
+                        if (modules) {
+                            moduleCount[fileIndex] = modules.length;
+                        }
 
-                    chunkSize[fileIndex] = size;
+                        chunkSize[fileIndex] = size;
 
-                    return chunkMap;
-                }, initial);
+                        return chunkMap;
+                    }, initial)
+            );
         }, Object.create(null));
 
         // Convert the object to an array. The order doesn't really matter.
         const result = [];
 
         for (const name in chunksData) {
-            const {chunkSize, moduleCount} = chunksData[name];
-            result.push({name, chunkSize, moduleCount});
+            const { chunkSize, moduleCount } = chunksData[name];
+            result.push({ name, chunkSize, moduleCount });
         }
 
         return result;
     },
 
     buildLogString(reporterName, result, options) {
-
         let showModulesHeader = false;
         let longestName = 0;
 
-        const sortedResult = result
-            .sort((before, after) => getSortValue(before, after, options.sort))
-            .map(data => {
-                const {name, chunkSize, moduleCount} = data;
+        const sortedResult = result.sort((before, after) => getSortValue(before, after, options.sort)).map(data => {
+            const { name, chunkSize, moduleCount } = data;
 
-                // Every row starts with a chunk or asset name
-                // For chunks and assets we're always gonna have size data
-                let row = [name, ...mapSizeData(chunkSize)];
+            // Every row starts with a chunk or asset name
+            // For chunks and assets we're always gonna have size data
+            let row = [name, ...mapSizeData(chunkSize)];
 
-                // Module data is only available when comparing chunks
-                const noModuleData = moduleCount.every(number => number === 0);
+            // Module data is only available when comparing chunks
+            const noModuleData = moduleCount.every(number => number === 0);
 
-                // Names can get long, so we need to adjust the table column width
-                // We don't care about non-BMP characters, so it's safe to use length
-                if (name.length > longestName) longestName = name.length;
+            // Names can get long, so we need to adjust the table column width
+            // We don't care about non-BMP characters, so it's safe to use length
+            if (name.length > longestName) longestName = name.length;
 
-                if (!noModuleData) {
-                    // Flag this to include column names for modules
-                    showModulesHeader = true;
-                    row = row.concat(mapModuleData(moduleCount));
-                }
+            if (!noModuleData) {
+                // Flag this to include column names for modules
+                showModulesHeader = true;
+                row = row.concat(mapModuleData(moduleCount));
+            }
 
-                const color = utils.getColor(utils.getChangePercentage(chunkSize[0], chunkSize[1]));
-                return row.map(text => color(text));
-            });
+            const color = utils.getColor(utils.getChangePercentage(chunkSize[0], chunkSize[1]));
+            return row.map(text => color(text));
+        });
 
-        const {name, size, modules, difference, percentage} = headerCopy;
+        const { name, size, modules, difference, percentage } = headerCopy;
         let header = [name[reporterName], size.before, size.after, difference, percentage];
 
         if (showModulesHeader) {
@@ -162,10 +161,12 @@ module.exports = {
 
         // Map every array to an object that cliui understands
         sortedResult.forEach(stuff => {
-            ui.div(...stuff.map((text, index) => {
-                const width = index === 0 ? longestName + 1 : undefined;
-                return {text, width};
-            }));
+            ui.div(
+                ...stuff.map((text, index) => {
+                    const width = index === 0 ? longestName + 1 : undefined;
+                    return { text, width };
+                })
+            );
         });
 
         return ui.toString();

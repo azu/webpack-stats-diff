@@ -1,8 +1,8 @@
-'use strict';
+"use strict";
 
-const colors = require('chalk');
-const ui = require('cliui')({
-    width: 150
+const colors = require("chalk");
+const ui = require("cliui")({
+    width: 200
 });
 
 const emptyChunk = {
@@ -11,53 +11,93 @@ const emptyChunk = {
 
 module.exports = {
     buildDiffObject(reporterName, stats, options) {
-        const filterByName = names => chunks => chunks.filter(chunk => names.indexOf(chunk.names[0]) > -1);
+        const filterByName = names => chunks => {
+            if (names.length === 0) {
+                return chunks;
+            }
+            return chunks.filter(chunk =>
+                names.find(name => {
+                    return name === chunk.names[0];
+                })
+            );
+        };
         const getChunksByName = filterByName(options.modules);
-
         const buildDiffObject = (chunk = emptyChunk) => {
-            if (!chunk.modules) throw new Error('No chunk module data available.')
+            if (!chunk.modules) {
+                throw new Error("No chunk module data available.");
+            }
             return {
                 name: chunk.names[0],
-                modules: chunk.modules.map(module => module.name)
-            }
+                modules: chunk.modules
+            };
         };
 
-        const [firstFileModules, secondFileModules] = stats
+        const [leftModules, rightModules] = stats
             // Loop through all the chunks and filter out the only ones we need
-            .map(({chunks}) => getChunksByName(chunks))
+            .map(({ chunks }) => getChunksByName(chunks))
             // Extract only the data we need for the diff.
             .map(requestedChunks => requestedChunks.map(buildDiffObject));
 
-        const mapModuleDiff = (arr1, arr2) => arr1.map((chunk, index) => {
-            return {
-                name: chunk.name,
-                modules: chunk.modules.filter(name => !arr2[index] || arr2[index].modules.indexOf(name) === -1)
-            };
-        });
+        const mapModuleDiff = (leftModules, rightModules) => {
+            return leftModules.map((chunk, index) => {
+                return {
+                    name: chunk.name,
+                    modules: chunk.modules
+                        .filter(leftModule => {
+                            const rightElement = rightModules[index];
+                            const rightModule = rightElement.modules.find(
+                                rightModule => rightModule.name === leftModule.name
+                            );
+                            const isAddOrRemoved = !rightElement || !rightModule;
+                            if (isAddOrRemoved) {
+                                return true;
+                            }
+                            if (rightModule) {
+                                return leftModule.size !== rightModule.size;
+                            }
+                            return false;
+                        })
+                        .map(module => {
+                            return {
+                                name: module.name,
+                                size: module.size
+                            };
+                        })
+                };
+            });
+        };
 
         return {
-            addedFiles: mapModuleDiff(secondFileModules, firstFileModules),
-            removedFiles: mapModuleDiff(firstFileModules, secondFileModules)
+            addedFiles: mapModuleDiff(rightModules, leftModules),
+            removedFiles: mapModuleDiff(leftModules, rightModules)
         };
     },
 
-    buildLogString(reporterName, {addedFiles, removedFiles}, options) {
+    buildLogString(reporterName, { addedFiles, removedFiles }, options) {
+        let totalDiff = 0;
         addedFiles.forEach((addedChunkInfo = emptyChunk, index) => {
             const removedChunkInfo = removedFiles[index] || emptyChunk;
-            const {modules: removedModules} = removedChunkInfo;
-            const {modules: addedModules} = addedChunkInfo;
+            const { modules: removedModules } = removedChunkInfo;
+            const { modules: addedModules } = addedChunkInfo;
             const name = addedChunkInfo.name || removedChunkInfo.name;
 
             const longestList = addedModules.length > removedModules.length ? addedModules : removedModules;
 
-            ui.div(`Removed files from ${name}`, `Added files ${name}`);
+            ui.div(`Removed files from ${name}`, `Added files ${name}`, "Before(byte)" + " " + "After(byte)");
 
             longestList.forEach((dontNeedThis, index) => {
-                const removedModule = removedModules[index] || '';
-                const addedModule = addedModules[index] || '';
-                ui.div(colors.red(removedModule), colors.green(addedModule));
+                const removedModule = removedModules[index] || {};
+                const addedModule = addedModules[index] || {};
+                totalDiff += (addedModule.size || 0) - removedModule.size || 0;
+                ui.div(
+                    colors.red(removedModule.name || "-"),
+                    colors.green(addedModule.name || "-"),
+                    colors.red(removedModule.size || "-") + " -> " + colors.green(addedModule.size || "-")
+                );
             });
         });
+
+        ui.div("Total diff", totalDiff <= 0 ? colors.green(totalDiff) : colors.red(totalDiff));
 
         return ui.toString();
     }
